@@ -36,7 +36,7 @@ git clone https://github.com/your_username/image-tool.git
 
 2. Navigate to the project directory:
 
-cd yourpastfolers/image-tool
+cd image-tool
 
 3. Install the required dependencies:
 
