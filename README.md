@@ -18,7 +18,7 @@ Image Tool is a versatile solution for various image resizing needs, whether for
 
 ### Using the Executable (Windows)
 
-1. Download the executable from the [releases page](link_to_releases) of this project.
+1. Download the executable from the [releases page](https://github.com/Forcica/Image-Tool--Upscale---Downscale-/releases/tag/v1.0.1release) of this project.
 
 2. Run the executable by double-clicking on it. No additional installation is required.
 
