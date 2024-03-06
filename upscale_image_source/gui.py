@@ -4,14 +4,14 @@ from PIL import Image, ImageTk
 import os
 from functools import partial
 from threading import Thread
-from upscale_image_source.image_processing import ImageProcessor  # Import modifié
+from upscale_image_source.image_processing import ImageProcessor
 
 NUNITO_FONT = ("Nunito", 11)
 
 class ImageToolApp:
    def __init__(self, master):
       self.master = master
-      self.master.iconbitmap('D:/Code/Python/upscale_image/image-removebg-preview.ico')
+      self.master.iconbitmap('D:/Code/Python/upscale_image/Image-Tool--Upscale---Downscale-/image-removebg-preview.ico')
       self.master.title("Outil d'Upscaling et de Réduction d'Images")
       self.master.geometry('1500x1200')
 
@@ -29,7 +29,6 @@ class ImageToolApp:
       self.image_processor = ImageProcessor()
 
       self.create_widgets()
-      self.setup_upscale_options()
 
    def apply_dark_theme(self):
       self.master.style = ttk.Style()
@@ -61,11 +60,11 @@ class ImageToolApp:
       self.create_rename_images_widgets()
 
    def create_frame(self):
-      padding = {'padx': 555, 'pady': 20}
       self.frame = ttk.Frame(self.master, padding="10")
       self.frame.pack(expand=True, fill=tk.BOTH)
 
    def create_image_selection_widgets(self):
+      padding = {'padx': 555, 'pady': 20}
       self.btn_select_images = ttk.Button(self.frame, text="[1] Sélectionner des Images", command=self.select_images, width=20)
       self.btn_select_images.pack(fill=tk.X, **padding)
 
@@ -92,6 +91,7 @@ class ImageToolApp:
       self.btn_scale_images.pack(fill=tk.X, **padding)
 
    def create_rename_images_widgets(self):
+      padding = {'padx': 555, 'pady': 20}
       self.label_texture_name = ttk.Label(self.frame, text="(Optionnel) Entrez le nom initial pour renommer toutes les textures :")
       self.label_texture_name.pack(fill=tk.X, padx=5, pady=2)
 
@@ -171,7 +171,6 @@ class ImageToolApp:
       for index, img_path in enumerate(self.selected_images):
          self.image_processor.scale_image(img_path, scale_factor, direction)
 
-         # Mise à jour de l'étiquette de progression avec le pourcentage
          percent_done = (index + 1) / total_images * 100
          self.progress_label['text'] = f"{percent_done:.2f}% accompli"
 
