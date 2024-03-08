@@ -4,15 +4,14 @@ from PIL import Image, ImageTk
 import os
 from functools import partial
 from threading import Thread
-from upscale_image_source.image_processing import ImageProcessor
 
 NUNITO_FONT = ("Nunito", 11)
 
 class ImageToolApp:
    def __init__(self, master):
       self.master = master
-      self.master.iconbitmap('D:/Code/Python/upscale_image/Image-Tool--Upscale---Downscale-/image-removebg-preview.ico')
       self.master.title("Outil d'Upscaling et de Réduction d'Images")
+      self.master.iconbitmap('D:/Code/Python/upscale_image/Image-Tool--Upscale---Downscale-/image-removebg-preview.ico')
       self.master.geometry('1500x1200')
 
       self.apply_dark_theme()
@@ -25,8 +24,6 @@ class ImageToolApp:
       self.create_new_version = tk.BooleanVar(value=False)
       self.upscale_value = tk.IntVar(value=2)
       self.scale_direction = tk.StringVar(value="Upscale")
-
-      self.image_processor = ImageProcessor()
 
       self.create_widgets()
 
@@ -45,19 +42,12 @@ class ImageToolApp:
       self.master.style.configure('Hover.TButton', background='#555')
       self.master.style.configure('Black.TEntry', foreground='black')
 
-   def on_enter(self, e):
-      self.hover_id = self.master.after(100, lambda: e.widget.config(style='Hover.TButton'))
-
-   def on_leave(self, e):
-      if hasattr(self, 'hover_id'):
-         self.master.after_cancel(self.hover_id)
-      e.widget.config(style='TButton')
-
    def create_widgets(self):
       self.create_frame()
       self.create_image_selection_widgets()
       self.create_upscale_options()
       self.create_rename_images_widgets()
+      self.create_image_preview_with_scrollbar()
 
    def create_frame(self):
       self.frame = ttk.Frame(self.master, padding="10")
@@ -68,7 +58,7 @@ class ImageToolApp:
       self.btn_select_images = ttk.Button(self.frame, text="[1] Sélectionner des Images", command=self.select_images, width=20)
       self.btn_select_images.pack(fill=tk.X, **padding)
 
-      self.image_preview_frame = ttk.Frame(self.frame, height=300)
+      self.image_preview_frame = ttk.Frame(self.frame)
       self.image_preview_frame.pack(fill=tk.X, padx=5, pady=2)
 
       self.btn_remove_all_images = ttk.Button(self.frame, text="Supprimer toutes les images (Optionnel)", command=self.remove_all_images, width=20)
@@ -121,44 +111,48 @@ class ImageToolApp:
          messagebox.showerror("Erreur", "Erreur lors de la suppression de l'image.")
 
    def display_image_previews(self):
-      for widget in self.image_preview_frame.winfo_children():
+      for widget in self.inner_frame.winfo_children():
          widget.destroy()
       self.image_previews.clear()
 
-      num_columns = 11
+      num_columns = 9  # Vous pourriez vouloir ajuster cela en fonction de la largeur de votre application.
       num_images = len(self.selected_images)
       num_rows = (num_images + num_columns - 1) // num_columns
 
-      self.image_preview_frame.configure(height=num_rows * 150)
+      frame_height = num_rows * 250  # Cela dépend de la hauteur de vos aperçus d'images.
+      self.inner_frame.configure(height=frame_height)
 
       for index, img_path in enumerate(self.selected_images):
          frame_row = index // num_columns
          frame_col = index % num_columns
 
-         frame = ttk.Frame(self.image_preview_frame)
+         frame = ttk.Frame(self.inner_frame)
          frame.grid(row=frame_row, column=frame_col, padx=10, pady=5)
 
          try:
-               img = Image.open(img_path)
+            img = Image.open(img_path)
+            width, height = img.size
+            img.thumbnail((123, 123))
+            photo = ImageTk.PhotoImage(img)
 
-               width, height = img.size
+            label = ttk.Label(frame, image=photo)
+            label.image = photo
+            label.pack(side=tk.TOP)
 
-               img.thumbnail((123, 123))
-               photo = ImageTk.PhotoImage(img)
+            size_label = ttk.Label(frame, text=f"{width}x{height}")
+            size_label.pack(side=tk.TOP)
 
-               label = ttk.Label(frame, image=photo)
-               label.image = photo
-               label.pack(side=tk.TOP)
+            btn_delete = ttk.Button(frame, text="✖", command=partial(self.remove_image, index))
+            btn_delete.pack(side=tk.TOP)
 
-               size_label = ttk.Label(frame, text=f"{width}x{height}")
-               size_label.pack(side=tk.TOP)
-
-               btn_delete = ttk.Button(frame, text="✖", command=partial(self.remove_image, index))
-               btn_delete.pack(side=tk.TOP)
-
-               self.image_previews.append(photo)
+            self.image_previews.append(photo)
          except Exception as e:
-               messagebox.showerror("Erreur", f"Impossible de charger l'image : {e}")
+            messagebox.showerror("Erreur", f"Impossible de charger l'image : {e}")
+
+      self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+      self.canvas.yview_moveto(0)
+
+      self.canvas.update_idletasks()
 
    def scale_images_thread(self):
       Thread(target=self.scale_images, daemon=True).start()
@@ -169,7 +163,7 @@ class ImageToolApp:
 
       total_images = len(self.selected_images)
       for index, img_path in enumerate(self.selected_images):
-         self.image_processor.scale_image(img_path, scale_factor, direction)
+         print(f"Scaling image {img_path} {direction} by factor of {scale_factor}")
 
          percent_done = (index + 1) / total_images * 100
          self.progress_label['text'] = f"{percent_done:.2f}% accompli"
@@ -202,3 +196,31 @@ class ImageToolApp:
 
       messagebox.showinfo("Succès", "Images renommées avec succès.")
       self.display_image_previews()
+
+   def create_image_preview_with_scrollbar(self):
+      # Assurez-vous que la scrollbar est attachée à la bonne frame.
+      self.scrollbar = ttk.Scrollbar(self.image_preview_frame, orient="vertical")
+      self.scrollbar.pack(side="right", fill="y")
+
+      self.canvas = tk.Canvas(self.image_preview_frame, yscrollcommand=self.scrollbar.set)
+      self.canvas.pack(side="left", fill="both", expand=True)
+
+      self.scrollbar.config(command=self.canvas.yview)
+
+      self.inner_frame = ttk.Frame(self.canvas)
+      self.canvas.create_window((0, 0), window=self.inner_frame, anchor="nw")
+
+      self.inner_frame.bind("<Configure>", self.on_inner_frame_configure)
+
+   def on_inner_frame_configure(self, event):
+      new_scrollregion = self.canvas.bbox("all")
+      print("Nouvelle scrollregion:", new_scrollregion)  # Ceci est pour le débogage
+      self.canvas.configure(scrollregion=new_scrollregion)
+
+def main():
+   root = tk.Tk()
+   app = ImageToolApp(root)
+   root.mainloop()
+
+if __name__ == "__main__":
+   main()
